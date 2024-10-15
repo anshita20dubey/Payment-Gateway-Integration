@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <title>Document</title>
+  </head>
+
+  <body>
+    <div class="bg-white p-6 rounded-lg shadow-lg md:flex md:flex-wrap gap-10">
+      <!-- Image with responsive sizes -->
+     <div class="flex flex-col">
+       <img
+         src="https://images.unsplash.com/photo-1601972599720-36938d4ecd31?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDJ8fHxlbnwwfHx8fHw%3D"
+         alt="Product Image"
+         class="w-full sm:w-80 md:w-96 lg:w-60 xl:w-80 h-auto rounded-lg mb-4"
+       />
+       <button
+         id="rzp-button1"
+         class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300 mb-5 md:flex md:mb-10"
+       >
+         Buy now
+       </button>
+
+     </div>
+
+    
+      
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+    <script>
+      var orderId;
+      $(document).ready(function () {
+        //pura page load hone ke baad ye chalta hai
+        var settings = {
+          url: "/create/orderId",
+          method: "POST",
+          timeout: 0,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          data: JSON.stringify({
+            amount: "2000000", //paise(unit)
+          }),
+        };
+
+        //creates new orderId everytime
+        $.ajax(settings).done(function (response) {
+          //.done matlab jab backend se response aa jaaye tab ye function chalana
+          // console.log(response.id);
+          // orderId = response.orderId;
+          var options = {
+            amount: response.amount, // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
+            currency: "INR",
+            name: "hastylancers pvt ltd",
+            description: "Test Transaction",
+            image:
+              "https://images.unsplash.com/photo-1603352525945-bb62a311295b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjR8fGxvZ298ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=500&q=60",
+            order_id: response.id, //This is a sample Order ID. Pass the `id` obtained in the response of Step 1
+            handler: function (response) {
+              //isse verify kar paayenge ki if payment is successful or not
+              var settings = {
+                url: "/api/payment/verify",
+                method: "POST",
+                timeout: 0,
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                data: JSON.stringify({ response }),
+              };
+              $.ajax(settings).done(function (response) {
+                if (response.signtaureIsValid == true) {
+                  window.location.href = "/success";
+                } else {
+                  alert("payment failer!");
+                }
+              });
+            },
+            notes: {
+              address: "Razorpay Corporate Office",
+            },
+            theme: {
+              color: "#3399cc",
+            },
+          };
+          var rzp1 = new Razorpay(options);
+          rzp1.on("payment.failed", function (response) {
+            alert(response.error.code);
+            alert(response.error.description);
+            alert(response.error.source);
+            alert(response.error.step);
+            alert(response.error.reason);
+            alert(response.error.metadata.order_id);
+            alert(response.error.metadata.payment_id);
+          });
+          document.getElementById("rzp-button1").onclick = function (e) {
+            rzp1.open();
+            e.preventDefault();
+          };
+
+          console.log(orderId);
+          $("button").show();
+        });
+      });
+    </script>
+  </body>
+</html>
